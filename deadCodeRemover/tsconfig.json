@@ -1,0 +1,16 @@
+{
+  "compilerOptions": {
+    "rootDir": "./src",
+    "outDir": "./dist",
+    "lib": ["ES2019", "DOM"],
+    "module": "commonjs",
+    "target": "ES2019",
+    "strict": true,
+    "allowJs": true,
+    "esModuleInterop": true,
+    "downlevelIteration": true,
+    "declaration": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["node_modules", "dist", ".yarn"]
+}

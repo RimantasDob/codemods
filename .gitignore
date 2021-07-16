@@ -1,0 +1,13 @@
+.idea
+.vscode
+.DS_Store
+node_modules
+
+#yarn
+.yarn/*
+!.yarn/releases
+!.yarn/plugins
+!.yarn/sdks
+!.yarn/versions
+
+yarn-error.log
