@@ -1,10 +1,10 @@
-const { visit } = require('recast');
+import { visit } from 'recast'
 
-const { getCallExpressionVisitor } = require('./src/visitors');
-const utils = require('./src/utils');
+    import { getCallExpressionVisitor } from ('./src/visitors')
+import utils  from    ('./src/utils')
 
-// const files = '/Users/rimantas/projects/dibs-toho/mg/tests/PDP/pdpMSKU_spec.js';
-const files = '/Users/rimantas/projects/dibs-toho/mg/**/*.js';
+const files = '/Users/rimantas/projects/dibs-toho/mg/index.js';
+// const files = '/Users/rimantas/projects/dibs-toho/mg/**/*.js';
 
 const main = () => {
     const allFiles = utils.getAllFiles(files);
@@ -15,6 +15,6 @@ const main = () => {
         visit(ast, visitor);
         utils.updateFile(filePath, ast);
     }
-};
+}
 
 main()
