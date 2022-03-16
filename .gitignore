@@ -11,3 +11,7 @@ node_modules
 !.yarn/versions
 
 yarn-error.log
+test-results/
+playwright-report/
+test-results/
+playwright-report/

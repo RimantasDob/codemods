@@ -1,13 +1,13 @@
 import babel from '@babel/parser';
 import fs from 'fs';
 import glob from 'glob';
-import { parse, print } from 'recast';
+import { parse } from 'recast';
 
 const isPrimitive = val => {
     return val === null || /^[sbn]/.test(typeof val);
 };
 
-const _looksLike = (node, patternObj) => {
+export const looksLike = (node, patternObj) => {
     return (
         !!node &&
         patternObj &&
@@ -19,7 +19,7 @@ const _looksLike = (node, patternObj) => {
             } else {
                 return isPrimitive(patternVal)
                     ? patternVal === nodeVal
-                    : _looksLike(nodeVal, patternVal);
+                    : looksLike(nodeVal, patternVal);
             }
         })
     );
@@ -44,11 +44,9 @@ export default {
         const code = fs.readFileSync(filePath, { encoding: 'utf-8' });
         return parse(code, { parser: babel });
     },
-    looksLike(node, patternObj) {
-        return _looksLike(node, patternObj);
-    },
-    updateFile(filePath, ast) {
-        const code = print(ast).code;
-        fs.writeFileSync(filePath, code);
+    updateFile(oldPath, code) {
+        const newPath = oldPath.replace(/_spec/, '.spec').replace(/\.js$/g, '.mjs');
+        fs.renameSync(oldPath, newPath);
+        fs.writeFileSync(newPath, code);
     },
 };
