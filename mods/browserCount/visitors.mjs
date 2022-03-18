@@ -1,4 +1,4 @@
-import utils from '../../utils/utils.mjs';
+import { looksLike } from '../../utils/utils.mjs';
 
 const browser = {};
 
@@ -15,7 +15,7 @@ export default {
     getVisitors() {
         return {
             visitIdentifier(path) {
-                const isBrowser = utils.looksLike(path.node, {
+                const isBrowser = looksLike(path.node, {
                     name: name => name === 'browser',
                 });
                 if (isBrowser) {

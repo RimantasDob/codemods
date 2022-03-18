@@ -1,18 +1,12 @@
-import { looksLike } from '../../utils/utils.mjs';
-
 import constructArgs from './constructArgs.mjs';
-import updateVariableDeclaration from './variableDeclaration.mjs';
-import updateImportedPageObjects from './importedPageObjects.mjs';
 import refresh from './refresh.mjs';
 import getFunc from './getFunc.mjs';
-import isVisible from './isVisible.mjs';
-import constructor from './constructor.mjs';
+import locatorWithReturnValue from './locatorWithReturnValue.mjs';
 import click from './click.mjs';
 import keys from './keys.mjs';
 import setFunc from './setFunc.mjs';
-import filterOut from './filterOut.mjs';
 
-const updateBrowser = expression => {
+export const updateBrowser = expression => {
     const calleeProperty = expression.argument.callee.property.name;
     if (
         calleeProperty === 'click' ||
@@ -56,33 +50,41 @@ const updateBrowser = expression => {
     } else if (calleeProperty === 'selectByValue') {
         const selector = expression.argument.arguments[0];
         const arg = expression.argument.arguments[1];
-        const value = arg.name ? arg : arg.value;
+        const value = arg.value ? arg.value : arg;
         const argsObj = constructArgs({ value });
         setFunc(expression, 'selectOption', selector, argsObj);
     } else if (calleeProperty === 'selectByVisibleText') {
         const selector = expression.argument.arguments[0];
         const arg = expression.argument.arguments[1];
-        const label = arg.name ? arg : arg.value;
+        const label = arg.value ? arg.value : arg;
         const argsObj = constructArgs({ label });
         setFunc(expression, 'selectOption', selector, argsObj);
     } else if (calleeProperty === 'selectByIndex') {
         const selector = expression.argument.arguments[0];
         const arg = expression.argument.arguments[1];
-        const index = arg.name ? arg : arg.value;
+        const index = arg.value ? arg.value : arg;
         const argsObj = constructArgs({ index });
         setFunc(expression, 'selectOption', selector, argsObj);
+    } else if (calleeProperty === 'getText') {
+        const selector = expression.argument.arguments;
+        locatorWithReturnValue(expression, 'innerText', selector, []);
+    } else if (calleeProperty === 'getAttribute') {
+        const selector = expression.argument.arguments[0];
+        const attribute = expression.argument.arguments[1];
+        locatorWithReturnValue(expression, 'getAttribute', [selector], [attribute]);
     }
 };
 
-const updateBrowserWithReturnValue = init => {
+export const updateBrowserWithReturnValue = init => {
     const calleeProperty = init.argument.callee.property.name;
+    // console.log(calleeProperty);
     if (calleeProperty === 'getUrl') {
         getFunc(init, 'url');
     } else if (calleeProperty === 'getTitle') {
         getFunc(init, 'title');
     } else if (calleeProperty === 'isVisible') {
-        const args = init.argument.arguments;
-        isVisible(init, args);
+        const selector = init.argument.arguments;
+        locatorWithReturnValue(init, 'isVisible', selector, []);
     } else if (calleeProperty === 'getValue') {
         const selector = init.argument.arguments[0];
         setFunc(init, 'inputValue', selector);
@@ -99,78 +101,12 @@ const updateBrowserWithReturnValue = init => {
         }
         const argsObj = constructArgs({ ...args });
         setFunc(init, 'waitFor', selector, argsObj);
+    } else if (calleeProperty === 'getText') {
+        const selector = init.argument.arguments;
+        locatorWithReturnValue(init, 'innerText', selector, []);
+    } else if (calleeProperty === 'getAttribute') {
+        const selector = init.argument.arguments[0];
+        const attribute = init.argument.arguments[1];
+        locatorWithReturnValue(init, 'getAttribute', [selector], [attribute]);
     }
-};
-const _clg = false;
-const argument = { callee: { object: { name: name => name === 'browser' } } };
-
-export default {
-    getVisitors(filePath) {
-        const imports = [];
-        return {
-            visitProgram(path) {
-                _clg && console.log('visitProgram');
-                updateVariableDeclaration(path, filePath, imports);
-                this.traverse(path);
-            },
-            visitClassMethod(path) {
-                _clg && console.log('visitClassMethod');
-                if (path.node.key.name === 'constructor') {
-                    constructor(path.node, imports);
-                }
-                this.traverse(path);
-            },
-            visitMemberExpression(path) {
-                _clg && console.log('visitMemberExpression');
-                updateImportedPageObjects(path.node, imports);
-                this.traverse(path);
-            },
-            visitBlockStatement(path) {
-                _clg && console.log('visitBlockStatement');
-                filterOut(path.node, 'pause');
-                filterOut(path.node, 'scroll');
-                filterOut(path.node, 'scrollIntoView');
-                filterOut(path.node, 'scrollToBottom');
-                this.traverse(path);
-            },
-            visitVariableDeclarator(path) {
-                _clg && console.log('visitVariableDeclarator');
-                const isBrowser = looksLike(path.node, {
-                    init: { argument },
-                });
-                if (isBrowser) {
-                    updateBrowserWithReturnValue(path.node.init);
-                }
-                this.traverse(path);
-            },
-            visitIfStatement(path) {
-                _clg && console.log('visitIfStatement');
-                const isBrowser = looksLike(path.node, {
-                    test: { argument },
-                });
-                if (isBrowser) {
-                    updateBrowserWithReturnValue(path.node.test);
-                }
-                this.traverse(path);
-            },
-            visitExpressionStatement(path) {
-                _clg && console.log('visitExpressionStatement');
-                const isBrowser = looksLike(path.node, {
-                    expression: { argument },
-                });
-                if (isBrowser) {
-                    updateBrowser(path.node.expression);
-                }
-                this.traverse(path);
-            },
-            visitReturnStatement(path) {
-                _clg && console.log('visitReturnStatement');
-                const isBrowser = looksLike(path.node, { argument });
-                if (isBrowser) {
-                    updateBrowser(path.node);
-                }
-                this.traverse(path);
-            },
-        };
-    },
 };

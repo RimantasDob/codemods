@@ -2,7 +2,7 @@ import { types } from 'recast';
 
 const builders = types.builders;
 
-export default (node, args) => {
+export default (node, funcName, selector, args) => {
     node.argument = builders.callExpression(
         builders.memberExpression(
             builders.callExpression(
@@ -10,10 +10,10 @@ export default (node, args) => {
                     builders.thisExpression(),
                     builders.identifier('locator')
                 ),
-                args
+                selector
             ),
-            builders.identifier('isVisible')
+            builders.identifier(funcName)
         ),
-        []
+        args
     );
 };

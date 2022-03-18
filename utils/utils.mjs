@@ -40,13 +40,16 @@ export default {
                     )
             );
     },
-    getAST(filePath) {
-        const code = fs.readFileSync(filePath, { encoding: 'utf-8' });
+    getFile(filePath) {
+        return fs.readFileSync(filePath, { encoding: 'utf-8' });
+    },
+    getAST(code) {
         return parse(code, { parser: babel });
     },
-    updateFile(oldPath, code) {
-        const newPath = oldPath.replace(/_spec/, '.spec').replace(/\.js$/g, '.mjs');
+    renameFile(oldPath, newPath) {
         fs.renameSync(oldPath, newPath);
-        fs.writeFileSync(newPath, code);
+    },
+    updateFile(filePath, code) {
+        fs.writeFileSync(filePath, code);
     },
 };

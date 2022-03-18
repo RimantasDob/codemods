@@ -8,6 +8,7 @@ export default argsObj => {
               builders.objectExpression(
                   Object.entries(argsObj).map(([key, val]) => {
                       let value = val;
+
                       if (typeof val === 'string') {
                           value = builders.stringLiteral(val);
                       } else if (typeof val === 'number') {

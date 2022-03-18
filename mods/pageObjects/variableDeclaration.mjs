@@ -20,13 +20,38 @@ export default (path, filePath, imports) => {
         if (node?.declarations?.[0].init?.callee?.name === 'require') {
             const modulePath = node.declarations[0].init.arguments[0].value;
             const { moduleName, absolutePath } = getModuleData(modulePath, filePath);
-            if (node.declarations[0].id.name && absolutePath.includes('pageObjects')) {
+            if (
+                node.declarations[0].id.name &&
+                (absolutePath.includes('pageObjects') || absolutePath.includes('cache'))
+            ) {
+                const futureName = (
+                    moduleName.charAt(0).toLowerCase() + moduleName.slice(1)
+                ).replace(/^pDP/g, 'pdp');
+                const future =
+                    absolutePath.includes('mobile_web') && futureName === 'Search'
+                        ? 'mwSearch'
+                        : futureName;
                 imports.push({
                     past: node.declarations[0].id.name,
-                    future: moduleName.charAt(0).toLowerCase() + moduleName.slice(1),
+                    future,
                     moduleName,
+                    comment: `/** @type {import('${node.declarations[0].init.arguments[0].value}')} */`,
                 });
+                imports.sort((a, b) => (a.future > b.future ? 1 : -1));
                 node.declarations[0].id.name = moduleName;
+            } else if (
+                absolutePath === 'dibs-wdio' &&
+                node.declarations[0]?.id?.properties.some(
+                    prop => prop?.value.name === 'BasePageObject'
+                )
+            ) {
+                imports.push({
+                    past: 'basePageObject',
+                    future: 'basePageObject',
+                    moduleName: 'BasePageObject',
+                    comment: "/** @type {import('dibs-wdio').BasePageObject} */",
+                });
+                imports.sort((a, b) => (a.future > b.future ? 1 : -1));
             }
             return node;
         } else if (node.type === 'ClassDeclaration') {

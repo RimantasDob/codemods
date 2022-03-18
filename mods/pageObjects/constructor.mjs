@@ -18,80 +18,52 @@ export default (node, imports) => {
     node.params = page;
     // eslint-disable-next-line no-unused-vars
     const [initialSuper, ...otherStatements] = node.body.body;
-    const superStatement = builders.expressionStatement(
-        builders.callExpression(builders.super('super'), page)
+
+    const needsSuper = initialSuper.expression?.callee?.type === 'Super';
+    const other = needsSuper ? [...otherStatements] : [initialSuper, ...otherStatements];
+    const superStatement = needsSuper
+        ? [builders.expressionStatement(builders.callExpression(builders.super('super'), page))]
+        : [];
+
+    const thisPage = builders.expressionStatement(
+        builders.assignmentExpression(
+            '=',
+            builders.memberExpression(builders.thisExpression(), builders.identifier('page')),
+            builders.identifier('page')
+        )
     );
 
-    const needsPage =
-        otherStatements.filter(statement => statement?.expression?.left?.property?.name === 'page')
-            .length === 0;
-    const thisPage = needsPage
-        ? [
-              builders.expressionStatement(
-                  builders.assignmentExpression(
-                      '=',
-                      builders.memberExpression(
-                          builders.thisExpression(),
-                          builders.identifier('page')
-                      ),
-                      builders.identifier('page')
-                  )
-              ),
-          ]
-        : [];
-
-    const needsLocator =
-        otherStatements.filter(
-            statement => statement?.expression?.left?.property?.name === 'locator'
-        ).length === 0;
-    const thisLocator = needsLocator
-        ? [
-              builders.expressionStatement(
-                  builders.assignmentExpression(
-                      '=',
-                      builders.memberExpression(
-                          builders.thisExpression(),
-                          builders.identifier('locator')
-                      ),
-                      builders.callExpression(
-                          builders.memberExpression(
-                              builders.memberExpression(
-                                  builders.identifier('page'),
-                                  builders.identifier('locator')
-                              ),
-                              builders.identifier('bind')
-                          ),
-                          [builders.identifier('page')]
-                      )
-                  )
-              ),
-          ]
-        : [];
-    const pageObjects = imports
-        .filter(
-            ({ future }) =>
-                otherStatements.filter(
-                    statement => statement?.expression?.left?.property?.name === future
-                ).length === 0
-        )
-        .map(({ future, moduleName }) =>
-            builders.expressionStatement(
-                builders.assignmentExpression(
-                    '=',
+    const thisLocator = builders.expressionStatement(
+        builders.assignmentExpression(
+            '=',
+            builders.memberExpression(builders.thisExpression(), builders.identifier('locator')),
+            builders.callExpression(
+                builders.memberExpression(
                     builders.memberExpression(
-                        builders.thisExpression(),
-                        builders.identifier(future)
+                        builders.identifier('page'),
+                        builders.identifier('locator')
                     ),
-                    builders.newExpression(builders.identifier(moduleName), page)
-                )
+                    builders.identifier('bind')
+                ),
+                [builders.identifier('page')]
             )
-        );
+        )
+    );
 
-    node.body.body = [
-        superStatement,
-        ...thisPage,
-        ...thisLocator,
-        ...pageObjects,
-        ...otherStatements,
-    ];
+    const futureNames = imports.map(imp => imp.future);
+    const pageObjects = imports.map(({ future, moduleName }) =>
+        builders.expressionStatement(
+            builders.assignmentExpression(
+                '=',
+                builders.memberExpression(builders.thisExpression(), builders.identifier(future)),
+                builders.newExpression(builders.identifier(moduleName), page)
+            )
+        )
+    );
+    const otherOther = other.filter(statement => {
+        const title = statement?.expression?.left?.property?.name;
+        return !(futureNames.includes(title) || title === 'page' || title === 'locator');
+    });
+
+    node.body.body = [...superStatement, thisPage, thisLocator, ...pageObjects, ...otherOther];
 };
