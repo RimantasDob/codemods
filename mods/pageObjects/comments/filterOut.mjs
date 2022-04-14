@@ -1,4 +1,4 @@
-import { looksLike } from '../../utils/utils.mjs';
+import { looksLike } from '../../../utils/utils.mjs';
 
 export default (node, funcName) => {
     node.body = node.body.filter(

@@ -7,7 +7,7 @@ import utils from '../../utils/utils.mjs';
 const files = '/Users/rimantas/projects/dibs-toho/mg/**/*.js';
 
 export default () => {
-    const allFiles = utils.getAllFiles(files);
+    const allFiles = utils.getAllFiles(files).filter(file => !file.includes('iOS'));
     for (const filePath of allFiles) {
         const file = utils.getFile(filePath);
         const ast = utils.getAST(file);

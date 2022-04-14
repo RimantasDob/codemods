@@ -1,10 +1,10 @@
-import { looksLike } from '../../utils/utils.mjs';
+import { looksLike } from '../../../utils/utils.mjs';
 
-import { updateBrowser, updateBrowserWithReturnValue } from './updateBrowser.mjs';
-import updateVariableDeclaration from './variableDeclaration.mjs';
-import updateImportedPageObjects from './importedPageObjects.mjs';
-import constructor from './constructor.mjs';
-import filterOut from './filterOut.mjs';
+import { updateBrowser, updateBrowserWithReturnValue } from '../actions/updateBrowser.mjs';
+import updateVariableDeclaration from '../actions/variableDeclaration.mjs';
+import updateImportedPageObjects from '../actions/importedPageObjects.mjs';
+import constructor from '../actions/constructor.mjs';
+import filterOut from '../comments/filterOut.mjs';
 
 const _clg = false;
 const argument = { callee: { object: { name: name => name === 'browser' } } };

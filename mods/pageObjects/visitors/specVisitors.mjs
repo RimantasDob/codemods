@@ -1,42 +1,19 @@
-import { looksLike } from '../../utils/utils.mjs';
-import { types } from 'recast';
+import { addPageToTest, looksLike } from '../../../utils/utils.mjs';
 
-const builders = types.builders;
-
-import updateVariableDeclaration from './variableDeclaration.mjs';
-import { updateBrowser } from './updateBrowser.mjs';
-import itFunc from './it.mjs';
-import describeFunc from './describe.mjs';
+import updateVariableDeclaration from '../actions/variableDeclaration.mjs';
+import { updateBrowser, updateBrowserWithReturnValue } from '../actions/updateBrowser.mjs';
+import itFunc from '../actions/it.mjs';
+import describeFunc from '../actions/describe.mjs';
 let imports = [];
 
-const argument = { callee: { object: { name: name => name === 'browser' } } };
-
-const getParentNode = path => {
-    const parent = path.parentPath;
-    if (parent.node.type === 'Program') {
-        return null;
-    } else if (parent.node.type === 'CallExpression') {
-        const isTest = looksLike(parent.node, { callee: { name: n => n === 'test' } });
-        if (isTest) {
-            return parent;
-        } else {
-            return getParentNode(parent);
-        }
-    } else {
-        return getParentNode(parent);
-    }
-};
-
 export default {
-    resetImports() {
-        imports = [];
-    },
     getImports() {
         return imports;
     },
     getVisitors(filePath) {
         return {
             visitProgram(path) {
+                imports = [];
                 updateVariableDeclaration(path, filePath, imports);
                 this.traverse(path);
             },
@@ -58,24 +35,13 @@ export default {
                     itFunc(path.node);
                 }
                 const isBrowser = looksLike(path.node, {
-                    expression: { argument },
+                    expression: {
+                        argument: { callee: { object: { name: name => name === 'browser' } } },
+                    },
                 });
                 if (isBrowser) {
                     updateBrowser(path.node.expression);
-                    const parent = getParentNode(path);
-                    if (parent) {
-                        parent.node.arguments[1].params = [
-                            builders.objectPattern([
-                                {
-                                    type: 'ObjectProperty',
-                                    kind: 'init',
-                                    shorthand: true,
-                                    key: builders.identifier('page'),
-                                    value: builders.identifier('page'),
-                                },
-                            ]),
-                        ];
-                    }
+                    addPageToTest(path);
                 }
                 this.traverse(path);
             },
@@ -87,6 +53,19 @@ export default {
                     const calleeName = path.node.object.name;
                     const future = imports.filter(imp => imp.past === calleeName)[0].future;
                     path.node.object.name = future;
+                }
+                this.traverse(path);
+            },
+            visitAwaitExpression(path) {
+                const isBrowser = looksLike(path.node, {
+                    argument: { callee: { object: { name: name => name === 'browser' } } },
+                });
+                if (isBrowser) {
+                    console.log(filePath);
+                    console.log(path.node.argument.callee.property.name);
+                    updateBrowser(path.node);
+                    updateBrowserWithReturnValue(path.node);
+                    addPageToTest(path);
                 }
                 this.traverse(path);
             },

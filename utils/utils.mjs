@@ -1,7 +1,10 @@
 import babel from '@babel/parser';
 import fs from 'fs';
 import glob from 'glob';
-import { parse } from 'recast';
+import { parse, types } from 'recast';
+import { execSync } from 'child_process';
+
+const builders = types.builders;
 
 const isPrimitive = val => {
     return val === null || /^[sbn]/.test(typeof val);
@@ -23,6 +26,39 @@ export const looksLike = (node, patternObj) => {
             }
         })
     );
+};
+
+const getParentNode = path => {
+    const parent = path.parentPath;
+    if (parent.node.type === 'Program') {
+        return null;
+    } else if (parent.node.type === 'CallExpression') {
+        const isTest = looksLike(parent.node, { callee: { name: n => n === 'test' } });
+        if (isTest) {
+            return parent;
+        } else {
+            return getParentNode(parent);
+        }
+    } else {
+        return getParentNode(parent);
+    }
+};
+
+export const addPageToTest = path => {
+    const parent = getParentNode(path);
+    if (parent) {
+        parent.node.arguments[1].params = [
+            builders.objectPattern([
+                {
+                    type: 'ObjectProperty',
+                    kind: 'init',
+                    shorthand: true,
+                    key: builders.identifier('page'),
+                    value: builders.identifier('page'),
+                },
+            ]),
+        ];
+    }
 };
 
 export default {
@@ -51,5 +87,12 @@ export default {
     },
     updateFile(filePath, code) {
         fs.writeFileSync(filePath, code);
+    },
+    prettier(filePath, savedCode, code) {
+        if (savedCode !== code) {
+            execSync(`cd /Users/rimantas/projects/dibs-toho/mg && npx prettier ${filePath} --write`)
+                .toString()
+                .trim();
+        }
     },
 };
