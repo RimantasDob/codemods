@@ -9,8 +9,8 @@ import rename from './mods/renameFiles/main.mjs';
 const main = () => {
     const args = process.argv.slice(2);
     const argsParsed = yargsParser(args);
-    if (argsParsed.u) {
-        updateCode(argsParsed.file);
+    if ('u' in argsParsed) {
+        updateCode(argsParsed.file, argsParsed.u);
     } else if (argsParsed.count) {
         browserCount();
     } else if (argsParsed.func) {

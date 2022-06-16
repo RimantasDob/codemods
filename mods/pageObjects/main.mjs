@@ -1,4 +1,5 @@
 import { print, visit } from 'recast';
+import fs from 'fs';
 
 import addStuff, { pageTypes } from './comments/addStuff.mjs';
 import addVarDeclarations from './comments/addVarDeclarations.mjs';
@@ -6,9 +7,11 @@ import importVisitor from './visitors/importVisitor.mjs';
 import loginViaUIVisitor from './visitors/loginViaUIVisitor.mjs';
 import pageObjectVisitors from './visitors/pageObjectVisitors.mjs';
 import specVisitors from './visitors/specVisitors.mjs';
+import selectorVisitors from './visitors/selectorVisitors.mjs';
 import newSpecVisitors from './visitors/newSpecVisitors.mjs';
 import spinnerVisitors from './visitors/spinnerVisitor.mjs';
 import helperVisitor from './visitors/helperVisitor.mjs';
+import assertionVisitor from './visitors/assertionVisitor.mjs';
 import testVisitor from './visitors/testVisitor.mjs';
 
 import { getRelativePath } from './actions/variableDeclaration.mjs';
@@ -21,9 +24,8 @@ import filterOutLine from './comments/filterOutLine.mjs';
 
 const fileList = [
     '/Users/rimantas/projects/dibs-toho/mg/**/*.js',
-    '/Users/rimantas/projects/dibs-toho/mg/tests/ItemQuantity.spec.js',
+    '/Users/rimantas/projects/dibs-toho/mg/pageObjects/adminv2/DealerConversationView.js',
 ];
-const files = fileList[0];
 
 const exec1 = false;
 const exec2 = false;
@@ -34,9 +36,16 @@ const exec6 = false;
 const exec7 = false;
 const exec8 = false;
 const exec9 = false;
-const exec10 = true;
+const exec10 = false;
+const exec11 = false;
+const exec12 = false;
+const exec13 = false;
+const exec14 = false;
+const exec15 = true;
 
-export default file => {
+export default (file, i) => {
+    const index = Number(i) || 0;
+    const files = fileList[index];
     const allFiles = utils.getAllFiles(file || files);
     // Updates old pageObjects
     if (exec1) {
@@ -279,6 +288,95 @@ export default file => {
                 utils.updateFile(filePath, code);
                 utils.prettier(filePath, before, code);
             }
+        }
+    }
+    //Find Zephyt tickets above describes
+    if (exec11) {
+        for (const filePath of allFiles) {
+            const before = utils.getFile(filePath).split('\n');
+            for (let i = 0; i < before.length - 1; i++) {
+                const j = i + 1;
+                if (
+                    before[i].includes('https://1stdibs.atlassian.net/browse/TEST-') &&
+                    before[j].includes('describe')
+                ) {
+                    console.log(filePath);
+                }
+            }
+        }
+    }
+    if (exec12) {
+        const specFiles = allFiles.filter(filePath => !filePath.includes('iOS'));
+        for (const filePath of specFiles) {
+            let before = utils.getFile(filePath);
+            const savedCode = before.split('\n').join('\n');
+            const hasAssertion = savedCode.includes('truthyAssertion');
+            if (hasAssertion) {
+                console.log(filePath);
+                before = before
+                    .split('\n')
+                    .map(line => {
+                        if (!line.includes('@type') && line.includes('dibs-playwright')) {
+                            const importString = line.match(/{.+}/g)[0];
+                            const imports = new Set(importString.match(/\w+/g)).add('expect');
+                            const update = [...imports]
+                                .filter(v => v !== 'BasePageObject')
+                                .sort((a, b) => (a > b ? 1 : -1));
+                            if (importString.includes('BasePageObject')) {
+                                update.push('BasePageObject');
+                            }
+                            return line.replace(/(?<={).+(?=})/g, update.join(', '));
+                        } else {
+                            return line;
+                        }
+                    })
+                    .join('\n');
+                const ast = utils.getAST(before);
+                const astVisitors = assertionVisitor.getVisitors(filePath);
+                // const ifVisitors = assertionVisitor.getIfVisitors(filePath);
+                visit(ast, astVisitors);
+                // visit(ast, ifVisitors);
+                let code = print(ast).code;
+                if (!code.includes('expect(')) {
+                    code = code.replace('expect, ', '');
+                }
+                utils.updateFile(filePath, code);
+                utils.prettier(filePath, savedCode, code);
+            }
+        }
+    }
+    //finds duplicate dibs-playwright import
+    if (exec13) {
+        const specFiles = allFiles.filter(
+            filePath => filePath.includes('pageObjects') && !filePath.includes('iOS')
+        );
+        for (const filePath of specFiles) {
+            let before = utils.getFile(filePath);
+            const imports = before.match(/=\srequire\('dibs-playwright'\)/g);
+            if (Array.isArray(imports) && imports.length > 1) {
+                console.log(filePath);
+            }
+        }
+    }
+    //rename snapshot files
+    if (exec14) {
+        for (const file of allFiles) {
+            if (file.includes('_spec.js.snap')) {
+                const newFile = file.replace('_spec.js.snap', '.spec.js.snap');
+                fs.renameSync(file, newFile);
+            }
+        }
+    }
+    if (exec15) {
+        const specFiles = allFiles.filter(filePath => !filePath.includes('iOS'));
+        for (const filePath of specFiles) {
+            let before = utils.getFile(filePath);
+            const ast = utils.getAST(before);
+            const astVisitors = selectorVisitors.getVisitors(filePath);
+            visit(ast, astVisitors);
+            let code = print(ast).code;
+            utils.updateFile(filePath, code);
+            utils.prettier(filePath, before, code);
         }
     }
 };

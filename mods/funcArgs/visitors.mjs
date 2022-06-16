@@ -20,8 +20,8 @@ export default {
                     const func = node.callee.property.name;
                     const args = [];
                     // args.push(node.arguments?.[0]?.value ?? node.arguments?.[0]?.name ?? null);
-                    args.push(node.arguments?.[1]?.value ?? node.arguments?.[1]?.name ?? null);
-                    args.push(node.arguments?.[2]?.value ?? node.arguments?.[2]?.name ?? null);
+                    // args.push(node.arguments?.[1]?.value ?? node.arguments?.[1]?.name ?? null);
+                    // args.push(node.arguments?.[2]?.value ?? node.arguments?.[2]?.name ?? null);
                     args.push(node.arguments?.[3]?.value ?? node.arguments?.[3]?.name ?? null);
                     args.push(node.arguments?.[4]?.value ?? node.arguments?.[4]?.name ?? null);
                     args.push(node.arguments?.[5]?.value ?? node.arguments?.[5]?.name ?? null);
